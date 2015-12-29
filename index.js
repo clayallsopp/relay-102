@@ -2,82 +2,53 @@ let React    = require('react');
 let ReactDOM = require('react-dom');
 let Relay    = require('react-relay');
 
-class Item extends React.Component {
+class DBExplorer extends React.Component {
   render() {
-    let item = this.props.store;
-
-    return (
-      <div>
-        <h1><a href={item.url}>{item.title}</a></h1>
-        <h2>{item.score} - {item.by.id}</h2>
-        <hr />
-      </div>
-    );
-  }
-};
-Item = Relay.createContainer(Item, {
-  fragments: {
-    store: () => Relay.QL`
-      fragment on HackerNewsItem {
-        id
-        title,
-        score,
-        url
-        by {
-          id
-        }
-      }
-    `,
-  },
-});
-
-class TopItems extends React.Component {
-  render() {
-    let items = this.props.store.stories.map(
-      (store, idx) => <Item key={idx} store={store} />
-    );
     let variables = this.props.relay.variables;
-    let currentStoryType = (this.state && this.state.storyType) || variables.storyType;
+    console.log(this.props.store);
+    console.log(this.props);
+
+    let currentKey = variables.key;
 
     return <div>
-      <select onChange={this._onChange.bind(this)} value={currentStoryType}>
-        <option value="top">Top</option>
-        <option value="new">New</option>
-        <option value="ask">Ask HN</option>
-        <option value="show">Show HN</option>
-      </select>
-      { items }
+      <input type='text' placeholder='Key' value={ currentKey } onChange={ this._onChange.bind(this) } />
+      <div>Key: { currentKey }</div>
+      <div>Value: { this.props.store.valueForKey.value }</div>
     </div>;
   }
 
   _onChange(ev) {
-    let storyType = ev.target.value;
-    this.setState({ storyType });
+    let key = ev.target.value;
     this.props.relay.setVariables({
-      storyType
+      key
     });
   }
 }
-TopItems = Relay.createContainer(TopItems, {
+
+DBExplorer = Relay.createContainer(DBExplorer, {
   initialVariables: {
-    storyType: "top"
+    key: ''
   },
   fragments: {
     store: () => Relay.QL`
-      fragment on HackerNewsAPI {
-        stories(storyType: $storyType) { ${Item.getFragment('store')} },
+      fragment on KeyValueAPI {
+        valueForKey(key: $key) {
+          key
+          value
+          id
+        },
       }
     `,
   },
 });
 
-class HackerNewsRoute extends Relay.Route {
-  static routeName = 'HackerNewsRoute';
+class KeyValueRoute extends Relay.Route {
+  static routeName = 'KeyValueRoute';
   static queries = {
     store: ((Component) => {
       return Relay.QL`
       query root {
-        hn { ${Component.getFragment('store')} },
+        keyValue { ${Component.getFragment('store')} },
       }
     `}),
   };
@@ -89,6 +60,6 @@ Relay.injectNetworkLayer(
 
 let mountNode = document.getElementById('container');
 let rootComponent = <Relay.RootContainer
-  Component={TopItems}
-  route={new HackerNewsRoute()} />;
+  Component={DBExplorer}
+  route={new KeyValueRoute()} />;
 ReactDOM.render(rootComponent, mountNode);
