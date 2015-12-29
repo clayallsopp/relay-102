@@ -2,38 +2,102 @@ let React    = require('react');
 let ReactDOM = require('react-dom');
 let Relay    = require('react-relay');
 
+class SaveKeyMutation extends Relay.Mutation {
+  static fragments = {
+    item: () => Relay.QL`
+      fragment on KeyValueItem {
+        id,
+        value,
+      }
+    `,
+  };
+
+  getMutation() {
+    return Relay.QL`mutation GraphQLHubMutationAPI {
+      keyValue_setValue
+    }`;
+  }
+
+  getFatQuery() {
+    return Relay.QL`
+      fragment on SetValueForKeyPayload {
+        item {
+          value
+          id
+        }
+      }
+    `;
+  }
+
+  getConfigs() {
+    return [{
+      type: 'FIELDS_CHANGE',
+      fieldIDs: {
+        item: this.props.item.id,
+      },
+    }];
+  }
+
+  getVariables() {
+   return { id: this.props.item.id, value: this.props.item.value };
+ }
+
+ getOptimisticResponse() {
+   return {
+     item : {
+       id : this.props.item.id,
+       value : this.props.item.value,
+     }
+   }
+ }
+}
+
 class DBExplorer extends React.Component {
   render() {
-    let variables = this.props.relay.variables;
-    console.log(this.props.store);
-    console.log(this.props);
-
-    let currentKey = variables.key;
+    let currentKey = this.props.relay.variables.id;
+    let style = {};
+    if (this.props.relay.hasOptimisticUpdate(this.props.item.getValue)) {
+      style.color = 'red';
+    }
 
     return <div>
       <input type='text' placeholder='Key' value={ currentKey } onChange={ this._onChange.bind(this) } />
       <div>Key: { currentKey }</div>
-      <div>Value: { this.props.store.valueForKey.value }</div>
+      <div style={ style }>Value: { this.props.item.getValue.value }</div>
+      <hr />
+      <input type='text' placeholder='Key' ref='newKey' />
+      <input type='text' placeholder='Value' ref='newValue' />
+      <input type='button' value='Save' onClick={ this._onClick.bind(this) } />
     </div>;
   }
 
   _onChange(ev) {
-    let key = ev.target.value;
+    let id = ev.target.value;
     this.props.relay.setVariables({
-      key
+      id
     });
+  }
+
+  _onClick() {
+    let id   = this.refs.newKey.value;
+    let value = this.refs.newValue.value;
+
+    Relay.Store.update(
+      new SaveKeyMutation({
+        item: { id, value },
+      })
+    );
   }
 }
 
 DBExplorer = Relay.createContainer(DBExplorer, {
   initialVariables: {
-    key: ''
+    id: ''
   },
   fragments: {
-    store: () => Relay.QL`
+    item: () => Relay.QL`
       fragment on KeyValueAPI {
-        valueForKey(key: $key) {
-          key
+        getValue(id: $id) {
           value
           id
         },
@@ -45,10 +109,10 @@ DBExplorer = Relay.createContainer(DBExplorer, {
 class KeyValueRoute extends Relay.Route {
   static routeName = 'KeyValueRoute';
   static queries = {
-    store: ((Component) => {
+    item: ((Component) => {
       return Relay.QL`
       query root {
-        keyValue { ${Component.getFragment('store')} },
+        keyValue { ${Component.getFragment('item')} },
       }
     `}),
   };
