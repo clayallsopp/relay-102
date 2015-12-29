@@ -3,15 +3,6 @@ let ReactDOM = require('react-dom');
 let Relay    = require('react-relay');
 
 class SaveKeyMutation extends Relay.Mutation {
-  static fragments = {
-    item: () => Relay.QL`
-      fragment on KeyValueItem {
-        id,
-        value,
-      }
-    `,
-  };
-
   getMutation() {
     return Relay.QL`mutation GraphQLHubMutationAPI {
       keyValue_setValue
