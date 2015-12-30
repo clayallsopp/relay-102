@@ -31,19 +31,19 @@ class SaveKeyMutation extends Relay.Mutation {
 
   getVariables() {
    return { id: this.props.item.id, value: this.props.item.value };
- }
+  }
 
- getOptimisticResponse() {
-   return {
-     item : {
-       id : this.props.item.id,
-       value : this.props.item.value,
-     }
-   }
- }
+  getOptimisticResponse() {
+    return {
+      item : {
+        id : this.props.item.id,
+        value : this.props.item.value,
+      }
+    }
+  }
 }
 
-class DBExplorer extends React.Component {
+class Explorer extends React.Component {
   render() {
     let currentKey = this.props.relay.variables.id;
     let style = {};
@@ -81,7 +81,7 @@ class DBExplorer extends React.Component {
   }
 }
 
-DBExplorer = Relay.createContainer(DBExplorer, {
+Explorer = Relay.createContainer(Explorer, {
   initialVariables: {
     id: ''
   },
@@ -115,6 +115,6 @@ Relay.injectNetworkLayer(
 
 let mountNode = document.getElementById('container');
 let rootComponent = <Relay.RootContainer
-  Component={DBExplorer}
+  Component={Explorer}
   route={new KeyValueRoute()} />;
 ReactDOM.render(rootComponent, mountNode);
